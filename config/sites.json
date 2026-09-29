@@ -1,0 +1,10 @@
+{
+  "sites": [
+    {
+      "name": "Exam Live TV",
+      "baseUrl": "http://172.16.200.205",
+      "type": "exam-live-tv",
+      "enabled": true
+    }
+  ]
+}
