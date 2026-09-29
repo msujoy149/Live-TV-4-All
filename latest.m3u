@@ -1,1 +1,4 @@
+#EXTM3U
 
+#EXTINF:-1 tvg-name="Jamuna TV" tvg-logo="http://172.16.200.205/assets/images/Jamunatv.png" group-title="Exam Live TV",Jamuna TV
+http://172.16.200.205/img/play.php?stream=209
