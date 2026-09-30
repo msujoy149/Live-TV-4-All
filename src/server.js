@@ -23,8 +23,6 @@ const configPath = path.join(
 
 /**
  * Available website adapters.
- *
- * Every website type can have its own parser.
  */
 const parsers = {
   "xim-live-tv": parseXimLiveTV
@@ -342,9 +340,7 @@ app.get(
 );
 
 /**
- * Dynamic M3U playlist endpoint.
- *
- * Every request re-reads the source websites.
+ * Dynamic M3U playlist.
  */
 app.get(
   "/latest.m3u",
@@ -401,87 +397,101 @@ app.get(
 );
 
 /**
- * Dynamic stream resolver.
- *
- * Every request resolves the stream again.
+ * Resolve a stream and redirect to the
+ * current HLS URL.
+ */
+async function handleStreamRequest(
+  req,
+  res
+) {
+  try {
+    const streamId =
+      req.params.streamId;
+
+    if (
+      !/^\d+$/.test(
+        streamId
+      )
+    ) {
+      return res
+        .status(400)
+        .send(
+          "Invalid stream ID"
+        );
+    }
+
+    const { site } =
+      await findStreamSource(
+        streamId
+      );
+
+    const result =
+      await resolveStream({
+        baseUrl:
+          site.baseUrl,
+
+        streamId
+      });
+
+    /**
+     * Never cache the resolver response.
+     * Every request must resolve again.
+     */
+    res.set({
+      "cache-control":
+        "no-store, no-cache, must-revalidate, proxy-revalidate",
+
+      "pragma":
+        "no-cache",
+
+      "expires":
+        "0",
+
+      "surrogate-control":
+        "no-store"
+    });
+
+    return res.redirect(
+      302,
+      result.hlsUrl
+    );
+  } catch (error) {
+    console.error(
+      "Stream resolver error:",
+      error
+    );
+
+    return res
+      .status(502)
+      .json({
+        error:
+          "Unable to resolve current stream"
+      });
+  }
+}
+
+/**
+ * New HLS-looking resolver endpoint.
  *
  * Example:
  *
- *   /stream/209
+ * /stream/209.m3u8
+ */
+app.get(
+  "/stream/:streamId.m3u8",
+  handleStreamRequest
+);
+
+/**
+ * Keep the old endpoint working too.
  *
- * No token is stored here.
+ * Example:
+ *
+ * /stream/209
  */
 app.get(
   "/stream/:streamId",
-  async (req, res) => {
-    try {
-      const streamId =
-        req.params.streamId;
-
-      if (
-        !/^\d+$/.test(
-          streamId
-        )
-      ) {
-        return res
-          .status(400)
-          .send(
-            "Invalid stream ID"
-          );
-      }
-
-      const { site } =
-        await findStreamSource(
-          streamId
-        );
-
-      const result =
-        await resolveStream({
-          baseUrl:
-            site.baseUrl,
-
-          streamId
-        });
-
-      /**
-       * Prevent caching of the redirect.
-       *
-       * Every channel click should perform
-       * a new resolver request and obtain
-       * fresh playback information.
-       */
-      res.set({
-        "cache-control":
-          "no-store, no-cache, must-revalidate, proxy-revalidate",
-
-        "pragma":
-          "no-cache",
-
-        "expires":
-          "0",
-
-        "surrogate-control":
-          "no-store"
-      });
-
-      return res.redirect(
-        302,
-        result.hlsUrl
-      );
-    } catch (error) {
-      console.error(
-        "Stream resolver error:",
-        error
-      );
-
-      return res
-        .status(502)
-        .json({
-          error:
-            "Unable to resolve current stream"
-        });
-    }
-  }
+  handleStreamRequest
 );
 
 /**
