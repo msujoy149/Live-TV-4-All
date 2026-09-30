@@ -25,10 +25,6 @@ const configPath = path.join(
  * Available website adapters.
  *
  * Every website type can have its own parser.
- *
- * Example later:
- *
- * "other-site-type": parseOtherSite
  */
 const parsers = {
   "xim-live-tv": parseXimLiveTV
@@ -130,9 +126,7 @@ async function collectFromSite(site) {
   }
 
   const html =
-    await fetchSourcePage(
-      baseUrl
-    );
+    await fetchSourcePage(baseUrl);
 
   const siteId =
     site.id ||
@@ -259,22 +253,7 @@ async function findStreamSource(
 }
 
 /**
- * Determine the base URL that Televizo should use
- * for stream resolver links.
- *
- * Priority:
- *
- * 1. PUBLIC_BASE_URL environment variable
- * 2. X-Forwarded-Proto + Host
- * 3. Normal request protocol + Host
- *
- * Local example:
- *
- * http://192.168.0.103:3000
- *
- * Public example later:
- *
- * https://tv.abledrama.top
+ * Determine the base URL used in the generated playlist.
  */
 function getPlaylistBaseUrl(req) {
   const configuredBase =
@@ -365,8 +344,7 @@ app.get(
 /**
  * Dynamic M3U playlist endpoint.
  *
- * Every request re-reads the currently available
- * source websites.
+ * Every request re-reads the source websites.
  */
 app.get(
   "/latest.m3u",
@@ -425,12 +403,13 @@ app.get(
 /**
  * Dynamic stream resolver.
  *
+ * Every request resolves the stream again.
+ *
  * Example:
  *
- * /stream/209
+ *   /stream/209
  *
- * The current token is obtained dynamically
- * from the source website.
+ * No token is stored here.
  */
 app.get(
   "/stream/:streamId",
@@ -463,6 +442,27 @@ app.get(
 
           streamId
         });
+
+      /**
+       * Prevent caching of the redirect.
+       *
+       * Every channel click should perform
+       * a new resolver request and obtain
+       * fresh playback information.
+       */
+      res.set({
+        "cache-control":
+          "no-store, no-cache, must-revalidate, proxy-revalidate",
+
+        "pragma":
+          "no-cache",
+
+        "expires":
+          "0",
+
+        "surrogate-control":
+          "no-store"
+      });
 
       return res.redirect(
         302,
