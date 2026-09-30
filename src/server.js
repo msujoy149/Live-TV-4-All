@@ -23,6 +23,8 @@ const configPath = path.join(
 
 /**
  * Available website adapters.
+ *
+ * Every website type can have its own parser.
  */
 const parsers = {
   "xim-live-tv": parseXimLiveTV
@@ -124,7 +126,9 @@ async function collectFromSite(site) {
   }
 
   const html =
-    await fetchSourcePage(baseUrl);
+    await fetchSourcePage(
+      baseUrl
+    );
 
   const siteId =
     site.id ||
@@ -405,8 +409,28 @@ async function handleStreamRequest(
   res
 ) {
   try {
-    const streamId =
-      req.params.streamId;
+    /**
+     * Support both:
+     *
+     * /stream/209
+     *
+     * and:
+     *
+     * /stream/209.m3u8
+     *
+     * For the second form, remove the
+     * ".m3u8" suffix before validation.
+     */
+    let streamId =
+      String(
+        req.params.streamId || ""
+      );
+
+    streamId =
+      streamId.replace(
+        /\.m3u8$/i,
+        ""
+      );
 
     if (
       !/^\d+$/.test(
@@ -435,7 +459,6 @@ async function handleStreamRequest(
 
     /**
      * Never cache the resolver response.
-     * Every request must resolve again.
      */
     res.set({
       "cache-control":
@@ -471,7 +494,7 @@ async function handleStreamRequest(
 }
 
 /**
- * New HLS-looking resolver endpoint.
+ * HLS-looking resolver endpoint.
  *
  * Example:
  *
@@ -483,7 +506,7 @@ app.get(
 );
 
 /**
- * Keep the old endpoint working too.
+ * Original resolver endpoint.
  *
  * Example:
  *
