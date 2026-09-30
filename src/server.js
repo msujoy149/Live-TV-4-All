@@ -24,17 +24,18 @@ const configPath = path.join(
 /**
  * Available website adapters.
  *
- * Each website type can have its own parser.
+ * Every website type can have its own parser.
  *
- * Later:
- *   "another-site": parseAnotherSite
+ * Example later:
+ *
+ * "other-site-type": parseOtherSite
  */
 const parsers = {
   "xim-live-tv": parseXimLiveTV
 };
 
 /**
- * Load sites configuration.
+ * Load website configuration.
  */
 async function loadConfig() {
   const raw = await fs.readFile(
@@ -69,11 +70,7 @@ async function fetchSourcePage(baseUrl) {
 }
 
 /**
- * Convert a site name into a stable internal identifier.
- *
- * Example:
- *   XIM Live TV
- *   -> xim-live-tv
+ * Convert a site name into a stable internal ID.
  */
 function makeSiteId(name) {
   return String(name || "site")
@@ -83,25 +80,20 @@ function makeSiteId(name) {
 }
 
 /**
- * Apply optional manual channel-name overrides.
- *
- * Example in sites.json:
- *
- * "nameOverrides": {
- *   "101": "T Sports Extra",
- *   "106": "Another Channel"
- * }
- *
- * Manual names always have priority over
- * automatically detected names.
+ * Apply manual channel-name overrides.
  */
-function applyNameOverrides(channels, site) {
+function applyNameOverrides(
+  channels,
+  site
+) {
   const overrides =
     site.nameOverrides || {};
 
   return channels.map((channel) => {
     const manualName =
-      overrides[String(channel.streamId)];
+      overrides[
+        String(channel.streamId)
+      ];
 
     if (manualName) {
       return {
@@ -115,10 +107,11 @@ function applyNameOverrides(channels, site) {
 }
 
 /**
- * Parse one configured website.
+ * Parse one configured source website.
  */
 async function collectFromSite(site) {
-  const parser = parsers[site.type];
+  const parser =
+    parsers[site.type];
 
   if (!parser) {
     throw new Error(
@@ -127,10 +120,8 @@ async function collectFromSite(site) {
   }
 
   const baseUrl =
-    String(site.baseUrl || "").replace(
-      /\/+$/,
-      ""
-    );
+    String(site.baseUrl || "")
+      .replace(/\/+$/, "");
 
   if (!baseUrl) {
     throw new Error(
@@ -139,16 +130,20 @@ async function collectFromSite(site) {
   }
 
   const html =
-    await fetchSourcePage(baseUrl);
+    await fetchSourcePage(
+      baseUrl
+    );
 
   const siteId =
-    site.id || makeSiteId(site.name);
+    site.id ||
+    makeSiteId(site.name);
 
-  let channels = parser(
-    html,
-    baseUrl,
-    site.name
-  );
+  let channels =
+    parser(
+      html,
+      baseUrl,
+      site.name
+    );
 
   channels =
     applyNameOverrides(
@@ -156,21 +151,23 @@ async function collectFromSite(site) {
       site
     );
 
-  return channels.map((channel) => ({
-    ...channel,
+  return channels.map(
+    (channel) => ({
+      ...channel,
 
-    // Keep the website identity with every channel.
-    siteId,
+      siteId,
 
-    siteName: site.name,
+      siteName:
+        site.name,
 
-    // Helpful metadata for future multi-source support.
-    sourceSite: baseUrl
-  }));
+      sourceSite:
+        baseUrl
+    })
+  );
 }
 
 /**
- * Collect channels from every enabled website.
+ * Collect channels from all enabled websites.
  */
 async function collectAllChannels() {
   const config =
@@ -179,7 +176,8 @@ async function collectAllChannels() {
   const sites =
     (config.sites || [])
       .filter(
-        (site) => site.enabled !== false
+        (site) =>
+          site.enabled !== false
       );
 
   if (sites.length === 0) {
@@ -193,7 +191,9 @@ async function collectAllChannels() {
   for (const site of sites) {
     try {
       const channels =
-        await collectFromSite(site);
+        await collectFromSite(
+          site
+        );
 
       allChannels.push(
         ...channels
@@ -203,9 +203,6 @@ async function collectAllChannels() {
         `Failed to load ${site.name}:`,
         error
       );
-
-      // Do not stop the whole playlist
-      // because one website failed.
     }
   }
 
@@ -214,14 +211,10 @@ async function collectAllChannels() {
 
 /**
  * Find the source website for a stream.
- *
- * Current first-stage implementation:
- * - Match stream ID against collected channels.
- *
- * This allows different websites to eventually
- * have different parsers and different stream IDs.
  */
-async function findStreamSource(streamId) {
+async function findStreamSource(
+  streamId
+) {
   const channels =
     await collectAllChannels();
 
@@ -242,14 +235,16 @@ async function findStreamSource(streamId) {
     await loadConfig();
 
   const site =
-    (config.sites || []).find(
-      (item) =>
-        item.enabled !== false &&
-        (
-          item.id ||
-          makeSiteId(item.name)
-        ) === channel.siteId
-    );
+    (config.sites || [])
+      .find(
+        (item) =>
+          item.enabled !== false &&
+          (
+            item.id ||
+            makeSiteId(item.name)
+          ) ===
+            channel.siteId
+      );
 
   if (!site) {
     throw new Error(
@@ -264,55 +259,114 @@ async function findStreamSource(streamId) {
 }
 
 /**
- * Home / health endpoint.
+ * Determine the base URL that Televizo should use
+ * for stream resolver links.
+ *
+ * Priority:
+ *
+ * 1. PUBLIC_BASE_URL environment variable
+ * 2. X-Forwarded-Proto + Host
+ * 3. Normal request protocol + Host
+ *
+ * Local example:
+ *
+ * http://192.168.0.103:3000
+ *
+ * Public example later:
+ *
+ * https://tv.abledrama.top
  */
-app.get("/", async (_req, res) => {
-  try {
-    const config =
-      await loadConfig();
+function getPlaylistBaseUrl(req) {
+  const configuredBase =
+    process.env.PUBLIC_BASE_URL;
 
-    const sites =
-      (config.sites || [])
-        .filter(
-          (site) =>
-            site.enabled !== false
-        )
-        .map((site) => ({
-          id:
-            site.id ||
-            makeSiteId(site.name),
-
-          name: site.name,
-
-          type: site.type,
-
-          baseUrl: site.baseUrl
-        }));
-
-    res.json({
-      name: "Live TV 4 All",
-      status: "online",
-      sites
-    });
-  } catch (error) {
-    console.error(error);
-
-    res.status(500).json({
-      error:
-        "Failed to load configuration"
-    });
+  if (configuredBase) {
+    return configuredBase
+      .replace(/\/+$/, "");
   }
-});
+
+  const forwardedProto =
+    req.headers[
+      "x-forwarded-proto"
+    ];
+
+  const protocol =
+    forwardedProto
+      ? String(
+          forwardedProto
+        ).split(",")[0].trim()
+      : req.protocol;
+
+  const host =
+    req.get("host");
+
+  if (!host) {
+    throw new Error(
+      "Unable to determine request host"
+    );
+  }
+
+  return `${protocol}://${host}`;
+}
 
 /**
- * Dynamic M3U playlist.
+ * Home / health endpoint.
+ */
+app.get(
+  "/",
+  async (_req, res) => {
+    try {
+      const config =
+        await loadConfig();
+
+      const sites =
+        (config.sites || [])
+          .filter(
+            (site) =>
+              site.enabled !== false
+          )
+          .map((site) => ({
+            id:
+              site.id ||
+              makeSiteId(
+                site.name
+              ),
+
+            name:
+              site.name,
+
+            type:
+              site.type,
+
+            baseUrl:
+              site.baseUrl
+          }));
+
+      res.json({
+        name:
+          "Live TV 4 All",
+
+        status:
+          "online",
+
+        sites
+      });
+    } catch (error) {
+      console.error(error);
+
+      res.status(500).json({
+        error:
+          "Failed to load configuration"
+      });
+    }
+  }
+);
+
+/**
+ * Dynamic M3U playlist endpoint.
  *
- * Televizo will use:
- *
- *   /latest.m3u
- *
- * The playlist is rebuilt from the
- * currently available source websites.
+ * Every request re-reads the currently available
+ * source websites.
  */
 app.get(
   "/latest.m3u",
@@ -322,13 +376,21 @@ app.get(
         await collectAllChannels();
 
       if (channels.length === 0) {
-        return res.status(503).send(
-          "#EXTM3U\n"
-        );
+        return res
+          .status(503)
+          .send("#EXTM3U\n");
       }
 
+      const baseUrl =
+        getPlaylistBaseUrl(
+          req
+        );
+
       const playlist =
-        makeM3U(channels);
+        makeM3U(
+          channels,
+          baseUrl
+        );
 
       res.set({
         "content-type":
@@ -353,9 +415,9 @@ app.get(
         error
       );
 
-      return res.status(500).send(
-        "#EXTM3U\n"
-      );
+      return res
+        .status(500)
+        .send("#EXTM3U\n");
     }
   }
 );
@@ -365,13 +427,10 @@ app.get(
  *
  * Example:
  *
- *   /stream/209
+ * /stream/209
  *
- * The endpoint does NOT store a token.
- *
- * It asks XIM Live TV for the current
- * playback information and redirects to
- * the current HLS .m3u8 URL.
+ * The current token is obtained dynamically
+ * from the source website.
  */
 app.get(
   "/stream/:streamId",
@@ -380,21 +439,28 @@ app.get(
       const streamId =
         req.params.streamId;
 
-      if (!/^\d+$/.test(streamId)) {
-        return res.status(400).send(
-          "Invalid stream ID"
-        );
+      if (
+        !/^\d+$/.test(
+          streamId
+        )
+      ) {
+        return res
+          .status(400)
+          .send(
+            "Invalid stream ID"
+          );
       }
 
-      const {
-        site
-      } = await findStreamSource(
-        streamId
-      );
+      const { site } =
+        await findStreamSource(
+          streamId
+        );
 
       const result =
         await resolveStream({
-          baseUrl: site.baseUrl,
+          baseUrl:
+            site.baseUrl,
+
           streamId
         });
 
@@ -408,10 +474,12 @@ app.get(
         error
       );
 
-      return res.status(502).json({
-        error:
-          "Unable to resolve current stream"
-      });
+      return res
+        .status(502)
+        .json({
+          error:
+            "Unable to resolve current stream"
+        });
     }
   }
 );
@@ -421,9 +489,12 @@ app.get(
  */
 app.use(
   (_req, res) => {
-    res.status(404).json({
-      error: "Not Found"
-    });
+    res
+      .status(404)
+      .json({
+        error:
+          "Not Found"
+      });
   }
 );
 
