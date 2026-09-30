@@ -1,9 +1,9 @@
 {
   "sites": [
     {
-      "name": "Exam Live TV",
+      "name": "XIM Live TV",
       "baseUrl": "http://172.16.200.205",
-      "type": "exam-live-tv",
+      "type": "xim-live-tv",
       "enabled": true
     }
   ]
