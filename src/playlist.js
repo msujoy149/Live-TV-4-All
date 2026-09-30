@@ -1,65 +1,112 @@
 /**
  * Convert channel data into a Televizo-compatible M3U playlist.
  *
- * The playlist contains:
+ * Each channel contains:
  * - channel name
  * - logo URL
  * - website/category
- * - dynamic stream resolver URL
+ * - stream ID
  *
- * No live token is stored in the playlist.
+ * The playlist never stores a live token.
+ * It stores the public dynamic resolver URL instead.
  */
 
+/**
+ * Public base URL of our Live TV service.
+ *
+ * This is the URL Televizo will access.
+ */
+const PUBLIC_BASE_URL =
+  process.env.PUBLIC_BASE_URL ||
+  "https://tv.abledrama.top";
+
+/**
+ * Clean normal text.
+ */
 function cleanText(value, fallback = "") {
   return String(value ?? fallback)
     .replace(/\r?\n/g, " ")
     .trim();
 }
 
+/**
+ * Escape a value used inside an M3U attribute.
+ */
 function escapeAttribute(value) {
   return cleanText(value)
     .replace(/&/g, "&amp;")
     .replace(/"/g, "&quot;");
 }
 
-function escapeChannelName(value) {
-  return cleanText(value, "Unknown Channel")
-    .replace(/\r?\n/g, " ");
+/**
+ * Clean the channel display name.
+ */
+function cleanChannelName(value, streamId) {
+  const name = cleanText(
+    value,
+    `Channel ${streamId}`
+  );
+
+  return name || `Channel ${streamId}`;
 }
 
-function buildStreamUrl(channel) {
-  // Use a custom stream URL when a source provides one.
-  if (channel.streamUrl) {
-    return channel.streamUrl;
-  }
-
-  // Default dynamic resolver endpoint.
-  return `/stream/${encodeURIComponent(channel.streamId)}`;
+/**
+ * Build the public dynamic stream URL.
+ *
+ * Example:
+ *
+ *   streamId = 209
+ *
+ * becomes:
+ *
+ *   https://tv.abledrama.top/stream/209
+ */
+function buildStreamUrl(streamId) {
+  return (
+    `${PUBLIC_BASE_URL.replace(/\/+$/, "")}` +
+    `/stream/${encodeURIComponent(streamId)}`
+  );
 }
 
+/**
+ * Create the complete M3U playlist.
+ */
 export function makeM3U(channels = []) {
-  const lines = ["#EXTM3U"];
+  const lines = [
+    "#EXTM3U"
+  ];
 
   for (const channel of channels) {
     if (!channel || !channel.streamId) {
       continue;
     }
 
-    const name = escapeChannelName(
-      channel.name || `Channel ${channel.streamId}`
-    );
+    const streamId =
+      String(channel.streamId);
 
-    const logo = escapeAttribute(
-      channel.logo || ""
-    );
+    const name =
+      cleanChannelName(
+        channel.name,
+        streamId
+      );
 
-    const group = escapeAttribute(
-      channel.category || "Live TV"
-    );
+    const logo =
+      escapeAttribute(
+        channel.logo || ""
+      );
 
-    const tvgName = escapeAttribute(name);
+    const group =
+      escapeAttribute(
+        channel.category ||
+        channel.siteName ||
+        "Live TV"
+      );
 
-    const streamUrl = buildStreamUrl(channel);
+    const tvgName =
+      escapeAttribute(name);
+
+    const streamUrl =
+      buildStreamUrl(streamId);
 
     lines.push(
       `#EXTINF:-1 ` +
