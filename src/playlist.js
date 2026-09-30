@@ -5,18 +5,15 @@
  * - channel name
  * - logo URL
  * - website/category
- * - dynamic stream resolver URL
+ * - dynamic HLS resolver URL
  *
- * No live token is stored in the playlist.
+ * No live token is stored.
  *
- * The stream URL base can be provided by the server.
- * This allows the same code to work with:
+ * Every channel uses:
  *
- * Local:
- *   http://192.168.0.103:3000
+ *   /stream/{streamId}.m3u8
  *
- * Public:
- *   https://tv.abledrama.top
+ * so the player receives an HLS-looking URL directly.
  */
 
 const DEFAULT_PUBLIC_BASE_URL =
@@ -26,53 +23,74 @@ const DEFAULT_PUBLIC_BASE_URL =
 /**
  * Clean normal text.
  */
-function cleanText(value, fallback = "") {
-  return String(value ?? fallback)
+function cleanText(
+  value,
+  fallback = ""
+) {
+  return String(
+    value ?? fallback
+  )
     .replace(/\r?\n/g, " ")
     .trim();
 }
 
 /**
- * Escape a value used inside an M3U attribute.
+ * Escape a value used inside
+ * an M3U attribute.
  */
 function escapeAttribute(value) {
   return cleanText(value)
-    .replace(/&/g, "&amp;")
-    .replace(/"/g, "&quot;");
+    .replace(
+      /&/g,
+      "&amp;"
+    )
+    .replace(
+      /"/g,
+      "&quot;"
+    );
 }
 
 /**
- * Clean the channel display name.
+ * Clean channel name.
  */
-function cleanChannelName(value, streamId) {
+function cleanChannelName(
+  value,
+  streamId
+) {
   const name = cleanText(
     value,
     `Channel ${streamId}`
   );
 
-  return name || `Channel ${streamId}`;
+  return (
+    name ||
+    `Channel ${streamId}`
+  );
 }
 
 /**
  * Normalize the base URL.
  */
-function normalizeBaseUrl(baseUrl) {
+function normalizeBaseUrl(
+  baseUrl
+) {
   return String(
-    baseUrl || DEFAULT_PUBLIC_BASE_URL
-  ).replace(/\/+$/, "");
+    baseUrl ||
+      DEFAULT_PUBLIC_BASE_URL
+  ).replace(
+    /\/+$/,
+    ""
+  );
 }
 
 /**
- * Build the public dynamic stream URL.
+ * Build the dynamic HLS resolver URL.
  *
  * Example:
  *
- *   baseUrl  = http://192.168.0.103:3000
- *   streamId = 209
- *
- * becomes:
- *
- *   http://192.168.0.103:3000/stream/209
+ * http://192.168.0.108:3000
+ * +
+ * /stream/209.m3u8
  */
 function buildStreamUrl(
   streamId,
@@ -80,31 +98,38 @@ function buildStreamUrl(
 ) {
   return (
     `${normalizeBaseUrl(baseUrl)}` +
-    `/stream/${encodeURIComponent(streamId)}`
+    `/stream/${encodeURIComponent(
+      streamId
+    )}.m3u8`
   );
 }
 
 /**
  * Create the complete M3U playlist.
- *
- * @param {Array} channels
- * @param {string} baseUrl
  */
 export function makeM3U(
   channels = [],
-  baseUrl = DEFAULT_PUBLIC_BASE_URL
+  baseUrl =
+    DEFAULT_PUBLIC_BASE_URL
 ) {
   const lines = [
     "#EXTM3U"
   ];
 
-  for (const channel of channels) {
-    if (!channel || !channel.streamId) {
+  for (
+    const channel of channels
+  ) {
+    if (
+      !channel ||
+      !channel.streamId
+    ) {
       continue;
     }
 
     const streamId =
-      String(channel.streamId);
+      String(
+        channel.streamId
+      );
 
     const name =
       cleanChannelName(
@@ -120,12 +145,14 @@ export function makeM3U(
     const group =
       escapeAttribute(
         channel.category ||
-        channel.siteName ||
-        "Live TV"
+          channel.siteName ||
+          "Live TV"
       );
 
     const tvgName =
-      escapeAttribute(name);
+      escapeAttribute(
+        name
+      );
 
     const streamUrl =
       buildStreamUrl(
@@ -135,10 +162,10 @@ export function makeM3U(
 
     lines.push(
       `#EXTINF:-1 ` +
-      `tvg-name="${tvgName}" ` +
-      `tvg-logo="${logo}" ` +
-      `group-title="${group}",` +
-      `${name}`
+        `tvg-name="${tvgName}" ` +
+        `tvg-logo="${logo}" ` +
+        `group-title="${group}",` +
+        `${name}`
     );
 
     lines.push(
@@ -148,5 +175,7 @@ export function makeM3U(
 
   lines.push("");
 
-  return lines.join("\n");
+  return lines.join(
+    "\n"
+  );
 }
