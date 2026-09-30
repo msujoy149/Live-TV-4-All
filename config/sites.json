@@ -2,11 +2,10 @@
   "sites": [
     {
       "id": "xim-live-tv",
-      "name": "XIM Live TV",
+      "name": "XIM Live TV (BDIX)",
       "baseUrl": "http://172.16.200.205",
       "type": "xim-live-tv",
       "enabled": true,
-
       "nameOverrides": {}
     }
   ]
