@@ -1,10 +1,13 @@
 {
   "sites": [
     {
+      "id": "xim-live-tv",
       "name": "XIM Live TV",
       "baseUrl": "http://172.16.200.205",
       "type": "xim-live-tv",
-      "enabled": true
+      "enabled": true,
+
+      "nameOverrides": {}
     }
   ]
 }
