@@ -1,22 +1,25 @@
 /**
  * Convert channel data into a Televizo-compatible M3U playlist.
  *
- * Each channel contains:
+ * The playlist contains:
  * - channel name
  * - logo URL
  * - website/category
- * - stream ID
+ * - dynamic stream resolver URL
  *
- * The playlist never stores a live token.
- * It stores the public dynamic resolver URL instead.
+ * No live token is stored in the playlist.
+ *
+ * The stream URL base can be provided by the server.
+ * This allows the same code to work with:
+ *
+ * Local:
+ *   http://192.168.0.103:3000
+ *
+ * Public:
+ *   https://tv.abledrama.top
  */
 
-/**
- * Public base URL of our Live TV service.
- *
- * This is the URL Televizo will access.
- */
-const PUBLIC_BASE_URL =
+const DEFAULT_PUBLIC_BASE_URL =
   process.env.PUBLIC_BASE_URL ||
   "https://tv.abledrama.top";
 
@@ -51,27 +54,46 @@ function cleanChannelName(value, streamId) {
 }
 
 /**
+ * Normalize the base URL.
+ */
+function normalizeBaseUrl(baseUrl) {
+  return String(
+    baseUrl || DEFAULT_PUBLIC_BASE_URL
+  ).replace(/\/+$/, "");
+}
+
+/**
  * Build the public dynamic stream URL.
  *
  * Example:
  *
+ *   baseUrl  = http://192.168.0.103:3000
  *   streamId = 209
  *
  * becomes:
  *
- *   https://tv.abledrama.top/stream/209
+ *   http://192.168.0.103:3000/stream/209
  */
-function buildStreamUrl(streamId) {
+function buildStreamUrl(
+  streamId,
+  baseUrl
+) {
   return (
-    `${PUBLIC_BASE_URL.replace(/\/+$/, "")}` +
+    `${normalizeBaseUrl(baseUrl)}` +
     `/stream/${encodeURIComponent(streamId)}`
   );
 }
 
 /**
  * Create the complete M3U playlist.
+ *
+ * @param {Array} channels
+ * @param {string} baseUrl
  */
-export function makeM3U(channels = []) {
+export function makeM3U(
+  channels = [],
+  baseUrl = DEFAULT_PUBLIC_BASE_URL
+) {
   const lines = [
     "#EXTM3U"
   ];
@@ -106,7 +128,10 @@ export function makeM3U(channels = []) {
       escapeAttribute(name);
 
     const streamUrl =
-      buildStreamUrl(streamId);
+      buildStreamUrl(
+        streamId,
+        baseUrl
+      );
 
     lines.push(
       `#EXTINF:-1 ` +
@@ -116,7 +141,9 @@ export function makeM3U(channels = []) {
       `${name}`
     );
 
-    lines.push(streamUrl);
+    lines.push(
+      streamUrl
+    );
   }
 
   lines.push("");
