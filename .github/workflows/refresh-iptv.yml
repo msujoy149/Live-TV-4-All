@@ -33,7 +33,7 @@ jobs:
         env:
           DIN_ORIGIN_IP: '103.89.248.3'
         run: |
-          node <<'NODE'
+          node --input-type=module <<'NODE'
           import fs from 'node:fs';
           import { execFileSync } from 'node:child_process';
 
@@ -43,15 +43,44 @@ jobs:
           const lines = text.replace(/\r\n/g, '\n').split('\n');
 
           const targets = [];
+          let inIptvDin = false;
+
           for (let i = 0; i < lines.length; i++) {
-            const m = lines[i].match(/^https:\/\/tv\.abledrama\.top\/resolve\/iptvdin\/([^\s#]+)$/);
-            if (m) {
-              targets.push({ lineIndex: i, streamId: decodeURIComponent(m[1]) });
+            const line = lines[i];
+
+            if (line.startsWith('#EXTINF:')) {
+              inIptvDin = /group-title="IPTV DIN \(BDIX\)"/i.test(line);
+              continue;
             }
+
+            if (!inIptvDin || !line || line.startsWith('#')) continue;
+
+            let streamId = null;
+
+            const resolver = line.match(/^https:\/\/tv\.abledrama\.top\/resolve\/iptvdin\/([^\s#]+)$/i);
+            if (resolver) {
+              streamId = decodeURIComponent(resolver[1]);
+            }
+
+            if (!streamId) {
+              try {
+                const u = new URL(line);
+                const parts = u.pathname.split('/').filter(Boolean);
+                if (u.pathname.endsWith('/index.fmp4.m3u8') && parts.length >= 2) {
+                  streamId = decodeURIComponent(parts[parts.length - 2]);
+                }
+              } catch {}
+            }
+
+            if (streamId) {
+              targets.push({ lineIndex: i, streamId });
+            }
+
+            inIptvDin = false;
           }
 
           if (!targets.length) {
-            throw new Error('No IPTV DIN resolver URLs were found in latest.m3u');
+            throw new Error('No IPTV DIN channels were found in latest.m3u');
           }
 
           console.log(`Found ${targets.length} IPTV DIN channels to refresh.`);
@@ -80,8 +109,7 @@ jobs:
             if (!token) throw new Error('no token');
 
             const port = embed.port ? `:${embed.port}` : '';
-            const master = `${embed.protocol}//${embed.hostname}${port}/${encodeURIComponent(streamId)}/index.fmp4.m3u8?token=${encodeURIComponent(token)}`;
-            return master;
+            return `${embed.protocol}//${embed.hostname}${port}/${encodeURIComponent(streamId)}/index.fmp4.m3u8?token=${encodeURIComponent(token)}`;
           }
 
           let ok = 0;
@@ -93,7 +121,7 @@ jobs:
                 const master = resolveMaster(streamId);
                 lines[lineIndex] = master;
                 ok++;
-                console.log(`OK  ${streamId}`);
+                console.log(`OK   ${streamId}`);
               } catch (err) {
                 failed++;
                 console.log(`FAIL ${streamId}: ${err instanceof Error ? err.message : String(err)}`);
@@ -106,7 +134,7 @@ jobs:
           }
 
           if (ok === 0) {
-            throw new Error('All IPTV DIN token refreshes failed; keeping old playlist is unsafe.');
+            throw new Error('All IPTV DIN token refreshes failed; refusing to publish an empty refresh.');
           }
 
           if (failed > Math.floor(targets.length * 0.25)) {
