@@ -1,0 +1,130 @@
+name: Refresh IPTV DIN Playlist
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '17 */2 * * *'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: refresh-iptv-din
+  cancel-in-progress: true
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Download current playlist
+        run: |
+          curl -fL --retry 1 --connect-timeout 10 --max-time 30 \
+            'https://tv.abledrama.top/latest.m3u' \
+            -o latest.m3u
+
+      - name: Refresh IPTV DIN tokens
+        env:
+          DIN_ORIGIN_IP: '103.89.248.3'
+        run: |
+          node <<'NODE'
+          import fs from 'node:fs';
+          import { execFileSync } from 'node:child_process';
+
+          const file = 'latest.m3u';
+          const ip = process.env.DIN_ORIGIN_IP;
+          let text = fs.readFileSync(file, 'utf8');
+          const lines = text.replace(/\r\n/g, '\n').split('\n');
+
+          const targets = [];
+          for (let i = 0; i < lines.length; i++) {
+            const m = lines[i].match(/^https:\/\/tv\.abledrama\.top\/resolve\/iptvdin\/([^\s#]+)$/);
+            if (m) {
+              targets.push({ lineIndex: i, streamId: decodeURIComponent(m[1]) });
+            }
+          }
+
+          if (!targets.length) {
+            throw new Error('No IPTV DIN resolver URLs were found in latest.m3u');
+          }
+
+          console.log(`Found ${targets.length} IPTV DIN channels to refresh.`);
+
+          function curlPlay(streamId) {
+            const url = `http://iptvidn.com/play.php?stream=${encodeURIComponent(streamId)}`;
+            return execFileSync('curl', [
+              '-sS',
+              '-A', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Safari/537.36',
+              '-e', 'http://iptvidn.com/',
+              '--resolve', `iptvidn.com:80:${ip}`,
+              '--connect-timeout', '8',
+              '--max-time', '12',
+              '--retry', '0',
+              url,
+            ], { encoding: 'utf8', maxBuffer: 200000 }).trim();
+          }
+
+          function resolveMaster(streamId) {
+            const html = curlPlay(streamId);
+            const iframe = html.match(/<iframe\b[^>]*\bsrc\s*=\s*["']([^"']+)["']/i)?.[1];
+            if (!iframe) throw new Error('no iframe');
+
+            const embed = new URL(iframe);
+            const token = embed.searchParams.get('token');
+            if (!token) throw new Error('no token');
+
+            const port = embed.port ? `:${embed.port}` : '';
+            const master = `${embed.protocol}//${embed.hostname}${port}/${encodeURIComponent(streamId)}/index.fmp4.m3u8?token=${encodeURIComponent(token)}`;
+            return master;
+          }
+
+          let ok = 0;
+          let failed = 0;
+
+          async function runBatch(batch) {
+            await Promise.all(batch.map(async ({ lineIndex, streamId }) => {
+              try {
+                const master = resolveMaster(streamId);
+                lines[lineIndex] = master;
+                ok++;
+                console.log(`OK  ${streamId}`);
+              } catch (err) {
+                failed++;
+                console.log(`FAIL ${streamId}: ${err instanceof Error ? err.message : String(err)}`);
+              }
+            }));
+          }
+
+          for (let i = 0; i < targets.length; i += 4) {
+            await runBatch(targets.slice(i, i + 4));
+          }
+
+          if (ok === 0) {
+            throw new Error('All IPTV DIN token refreshes failed; keeping old playlist is unsafe.');
+          }
+
+          if (failed > Math.floor(targets.length * 0.25)) {
+            throw new Error(`Too many IPTV DIN refresh failures: ${failed}/${targets.length}`);
+          }
+
+          fs.writeFileSync(file, lines.join('\n'), 'utf8');
+          console.log(`Updated: ${ok}; kept old URLs: ${failed}.`);
+          NODE
+
+      - name: Commit refreshed playlist
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add latest.m3u
+          if git diff --cached --quiet; then
+            echo 'No playlist changes.'
+          else
+            git commit -m 'Refresh IPTV DIN tokens'
+            git push
+          fi
