@@ -1,4 +1,81 @@
 #EXTM3U
-
-#EXTINF:-1 tvg-name="Jamuna TV" tvg-logo="http://172.16.200.205/assets/images/Jamunatv.png" group-title="XIM Live TV",Jamuna TV
-http://172.16.200.205/img/play.php?stream=209
+#EXTINF:-1 tvg-name="Live" tvg-logo="http://172.16.200.205/assets/images/live.png" group-title="XIM Live TV (BDIX) - Sports",Live
+http://172.16.200.205:8088/101/tracks-v1a1/mono.m3u8
+#EXTINF:-1 tvg-name="T Sports" tvg-logo="http://172.16.200.205/assets/images/Tsports.png" group-title="XIM Live TV (BDIX) - Sports",T Sports
+http://172.16.200.205:8088/102/tracks-v1a1/mono.m3u8
+#EXTINF:-1 tvg-name="Live" tvg-logo="http://172.16.200.205/assets/images/live.png" group-title="XIM Live TV (BDIX) - Sports",Live
+http://172.16.200.205:8088/106/tracks-v1a1/mono.m3u8
+#EXTINF:-1 tvg-name="Star Sports 1" tvg-logo="http://172.16.200.205/assets/images/Star-sports1.png" group-title="XIM Live TV (BDIX) - Sports",Star Sports 1
+http://172.16.200.205:8088/110/tracks-v1a1/mono.m3u8
+#EXTINF:-1 tvg-name="Star Sports 2" tvg-logo="http://172.16.200.205/assets/images/Star-Sports2.png" group-title="XIM Live TV (BDIX) - Sports",Star Sports 2
+http://172.16.200.205:8088/115/tracks-v1a1/mono.m3u8
+#EXTINF:-1 tvg-name="Sony Ten 1" tvg-logo="http://172.16.200.205/assets/images/Sony-Ten1.png" group-title="XIM Live TV (BDIX) - Sports",Sony Ten 1
+http://172.16.200.205:8088/119/tracks-v1a1/mono.m3u8
+#EXTINF:-1 tvg-name="Sony Ten 2" tvg-logo="http://172.16.200.205/assets/images/Sony-Ten2.png" group-title="XIM Live TV (BDIX) - Sports",Sony Ten 2
+http://172.16.200.205:8088/120/tracks-v1a1/mono.m3u8
+#EXTINF:-1 tvg-name="Sony Ten 3" tvg-logo="http://172.16.200.205/assets/images/Sony-Ten3.png" group-title="XIM Live TV (BDIX) - Sports",Sony Ten 3
+http://172.16.200.205:8088/121/tracks-v1a1/mono.m3u8
+#EXTINF:-1 tvg-name="Star Sports Select 1" tvg-logo="http://172.16.200.205/assets/images/Star-Sports-Select1.png" group-title="XIM Live TV (BDIX) - Sports",Star Sports Select 1
+http://172.16.200.205:8088/123/tracks-v1a1/mono.m3u8
+#EXTINF:-1 tvg-name="Star Sports Select 2" tvg-logo="http://172.16.200.205/assets/images/Star-Sports-Select2.png" group-title="XIM Live TV (BDIX) - Sports",Star Sports Select 2
+http://172.16.200.205:8088/124/tracks-v1a1/mono.m3u8
+#EXTINF:-1 tvg-name="A Sports" tvg-logo="http://172.16.200.205/assets/images/Asports.png" group-title="XIM Live TV (BDIX) - Sports",A Sports
+http://172.16.200.205:8088/127/tracks-v1a1/mono.m3u8
+#EXTINF:-1 tvg-name="Eurosport" tvg-logo="http://172.16.200.205/assets/images/eurosports.png" group-title="XIM Live TV (BDIX) - Sports",Eurosport
+http://172.16.200.205:8088/128/tracks-v1a1/mono.m3u8
+#EXTINF:-1 tvg-name="Zee Bangla" tvg-logo="http://172.16.200.205/assets/images/Zee-Bangla.png" group-title="XIM Live TV (BDIX) - Bangla",Zee Bangla
+http://172.16.200.205:8088/301/tracks-v1a1/mono.m3u8
+#EXTINF:-1 tvg-name="Star Jalsha" tvg-logo="http://172.16.200.205/assets/images/Star-Jalsha.png" group-title="XIM Live TV (BDIX) - Bangla",Star Jalsha
+http://172.16.200.205:8088/302/tracks-v1a1/mono.m3u8
+#EXTINF:-1 tvg-name="Jalsha Movies" tvg-logo="http://172.16.200.205/assets/images/Jalsha-Movies.png" group-title="XIM Live TV (BDIX) - Bangla",Jalsha Movies
+http://172.16.200.205:8088/303/tracks-v1a1/mono.m3u8
+#EXTINF:-1 tvg-name="Colors Bangla" tvg-logo="http://172.16.200.205/assets/images/Colors-Bangla.png" group-title="XIM Live TV (BDIX) - Bangla",Colors Bangla
+http://172.16.200.205:8088/304/tracks-v1a1/mono.m3u8
+#EXTINF:-1 tvg-name="Sony Aath" tvg-logo="http://172.16.200.205/assets/images/Sony-Aath.png" group-title="XIM Live TV (BDIX) - Bangla",Sony Aath
+http://172.16.200.205:8088/306/tracks-v1a1/mono.m3u8
+#EXTINF:-1 tvg-name="Enterr10 Bangla" tvg-logo="http://172.16.200.205/assets/images/ENTERR10-BANGLA.jpg" group-title="XIM Live TV (BDIX) - Bangla",Enterr10 Bangla
+http://172.16.200.205:8088/307/tracks-v1a1/mono.m3u8
+#EXTINF:-1 tvg-name="Independent TV" tvg-logo="http://172.16.200.205/assets/images/independenttv.png" group-title="XIM Live TV (BDIX) - Bangla",Independent TV
+http://172.16.200.205:8088/201/tracks-v1a1/mono.m3u8
+#EXTINF:-1 tvg-name="ATN Bangla" tvg-logo="http://172.16.200.205/assets/images/atnbangla.png" group-title="XIM Live TV (BDIX) - Bangla",ATN Bangla
+http://172.16.200.205:8088/202/tracks-v1a1/mono.m3u8
+#EXTINF:-1 tvg-name="ATN News" tvg-logo="http://172.16.200.205/assets/images/atnnews.png" group-title="XIM Live TV (BDIX) - Bangla",ATN News
+http://172.16.200.205:8088/203/tracks-v1a1/mono.m3u8
+#EXTINF:-1 tvg-name="DBC News" tvg-logo="http://172.16.200.205/assets/images/Dbc.png" group-title="XIM Live TV (BDIX) - Bangla",DBC News
+http://172.16.200.205:8088/204/tracks-v1a1/mono.m3u8
+#EXTINF:-1 tvg-name="Masranga" tvg-logo="http://172.16.200.205/assets/images/Masranga.png" group-title="XIM Live TV (BDIX) - Bangla",Masranga
+http://172.16.200.205:8088/206/tracks-v1a1/mono.m3u8
+#EXTINF:-1 tvg-name="Channel i" tvg-logo="http://172.16.200.205/assets/images/ChannelI.png" group-title="XIM Live TV (BDIX) - Bangla",Channel i
+http://172.16.200.205:8088/207/tracks-v1a1/mono.m3u8
+#EXTINF:-1 tvg-name="Jamuna TV" tvg-logo="http://172.16.200.205/assets/images/Jamunatv.png" group-title="XIM Live TV (BDIX) - Bangla",Jamuna TV
+http://172.16.200.205:8088/209/tracks-v1a1/mono.m3u8
+#EXTINF:-1 tvg-name="Somoy TV" tvg-logo="http://172.16.200.205/assets/images/SomoyTV1689411430.png" group-title="XIM Live TV (BDIX) - Bangla",Somoy TV
+http://172.16.200.205:8088/205/tracks-v1a1/mono.m3u8
+#EXTINF:-1 tvg-name="Star Plus" tvg-logo="http://172.16.200.205/assets/images/Star-plus.png" group-title="XIM Live TV (BDIX) - Hindi",Star Plus
+http://172.16.200.205:8088/401/tracks-v1a1/mono.m3u8
+#EXTINF:-1 tvg-name="Star Gold" tvg-logo="http://172.16.200.205/assets/images/Star-Gold.png" group-title="XIM Live TV (BDIX) - Hindi",Star Gold
+http://172.16.200.205:8088/402/tracks-v1a1/mono.m3u8
+#EXTINF:-1 tvg-name="Sony Entertainment" tvg-logo="http://172.16.200.205/assets/images/Sony Entertainment.png" group-title="XIM Live TV (BDIX) - Hindi",Sony Entertainment
+http://172.16.200.205:8088/403/tracks-v1a1/mono.m3u8
+#EXTINF:-1 tvg-name="Colors Hindi" tvg-logo="http://172.16.200.205/assets/images/Colors-Hindi.png" group-title="XIM Live TV (BDIX) - Hindi",Colors Hindi
+http://172.16.200.205:8088/405/tracks-v1a1/mono.m3u8
+#EXTINF:-1 tvg-name="Zee Cinema" tvg-logo="http://172.16.200.205/assets/images/Zee-Cinema.png" group-title="XIM Live TV (BDIX) - Hindi",Zee Cinema
+http://172.16.200.205:8088/406/tracks-v1a1/mono.m3u8
+#EXTINF:-1 tvg-name="Sony Max HD" tvg-logo="http://172.16.200.205/assets/images/Sony Max HD1667728133.png" group-title="XIM Live TV (BDIX) - Hindi",Sony Max HD
+http://172.16.200.205:8088/407/tracks-v1a1/mono.m3u8
+#EXTINF:-1 tvg-name="Star Movie" tvg-logo="http://172.16.200.205/assets/images/Star-Movie.png" group-title="XIM Live TV (BDIX) - English",Star Movie
+http://172.16.200.205:8088/501/tracks-v1a1/mono.m3u8
+#EXTINF:-1 tvg-name="Sony Pix" tvg-logo="http://172.16.200.205/assets/images/sony-Pix.png" group-title="XIM Live TV (BDIX) - English",Sony Pix
+http://172.16.200.205:8088/503/tracks-v1a1/mono.m3u8
+#EXTINF:-1 tvg-name="Discovery" tvg-logo="http://172.16.200.205/assets/images/Discovery.png" group-title="XIM Live TV (BDIX) - English",Discovery
+http://172.16.200.205:8088/801/tracks-v1a1/mono.m3u8
+#EXTINF:-1 tvg-name="National Geography" tvg-logo="http://172.16.200.205/assets/images/National Geography.png" group-title="XIM Live TV (BDIX) - English",National Geography
+http://172.16.200.205:8088/802/tracks-v1a1/mono.m3u8
+#EXTINF:-1 tvg-name="Nick" tvg-logo="http://172.16.200.205/assets/images/NICK.JPG" group-title="XIM Live TV (BDIX) - Others",Nick
+http://172.16.200.205:8088/601/tracks-v1a1/mono.m3u8
+#EXTINF:-1 tvg-name="Disney Junior" tvg-logo="http://172.16.200.205/assets/images/Disney-junior.png" group-title="XIM Live TV (BDIX) - Others",Disney Junior
+http://172.16.200.205:8088/602/tracks-v1a1/mono.m3u8
+#EXTINF:-1 tvg-name="9X Jalwa" tvg-logo="http://172.16.200.205/assets/images/9X_Jalwa.png" group-title="XIM Live TV (BDIX) - Others",9X Jalwa
+http://172.16.200.205:8088/703/tracks-v1a1/mono.m3u8
+#EXTINF:-1 tvg-name="Sangeet Bangla" tvg-logo="http://172.16.200.205/assets/images/sangeetbangla.png" group-title="XIM Live TV (BDIX) - Others",Sangeet Bangla
+http://172.16.200.205:8088/702/tracks-v1a1/mono.m3u8
