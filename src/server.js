@@ -9,52 +9,77 @@ import { parseXimLiveTV } from "./parsers/xim-live-tv.js";
 
 const app = express();
 
-const PORT = process.env.PORT || 3000;
+const PORT =
+  process.env.PORT || 3000;
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+const __filename =
+  fileURLToPath(import.meta.url);
 
-const configPath = path.join(
-  __dirname,
-  "..",
-  "config",
-  "sites.json"
-);
+const __dirname =
+  path.dirname(__filename);
+
+const configPath =
+  path.join(
+    __dirname,
+    "..",
+    "config",
+    "sites.json"
+  );
 
 /**
  * Available website adapters.
  *
- * Every website type can have its own parser.
+ * Each website type can have its own
+ * parser implementation.
  */
 const parsers = {
-  "xim-live-tv": parseXimLiveTV
+  "xim-live-tv":
+    parseXimLiveTV
 };
 
 /**
  * Load website configuration.
  */
 async function loadConfig() {
-  const raw = await fs.readFile(
-    configPath,
-    "utf8"
-  );
+  const raw =
+    await fs.readFile(
+      configPath,
+      "utf8"
+    );
 
   return JSON.parse(raw);
 }
 
 /**
- * Fetch source website HTML.
+ * Fetch a source website homepage.
+ *
+ * This is intentionally done again when
+ * resolving a channel so channel data stays
+ * current and no source playback URL is stored.
  */
-async function fetchSourcePage(baseUrl) {
-  const response = await fetch(baseUrl, {
-    redirect: "follow",
-    signal: AbortSignal.timeout(15000),
-    headers: {
-      "user-agent": "Live-TV-4-All/1.0",
-      "accept":
-        "text/html,application/xhtml+xml"
-    }
-  });
+async function fetchSourcePage(
+  baseUrl
+) {
+  const response =
+    await fetch(
+      baseUrl,
+      {
+        redirect: "follow",
+
+        signal:
+          AbortSignal.timeout(
+            15000
+          ),
+
+        headers: {
+          "user-agent":
+            "Live-TV-4-All/1.0",
+
+          "accept":
+            "text/html,application/xhtml+xml"
+        }
+      }
+    );
 
   if (!response.ok) {
     throw new Error(
@@ -66,13 +91,37 @@ async function fetchSourcePage(baseUrl) {
 }
 
 /**
- * Convert a site name into a stable internal ID.
+ * Convert a site name into a stable
+ * internal site ID.
  */
-function makeSiteId(name) {
-  return String(name || "site")
+function makeSiteId(
+  name
+) {
+  return String(
+    name || "site"
+  )
     .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "");
+    .replace(
+      /[^a-z0-9]+/g,
+      "-"
+    )
+    .replace(
+      /^-+|-+$/g,
+      "");
+}
+
+/**
+ * Get the configured site ID.
+ */
+function getSiteId(
+  site
+) {
+  return String(
+    site.id ||
+      makeSiteId(
+        site.name
+      )
+  );
 }
 
 /**
@@ -83,29 +132,36 @@ function applyNameOverrides(
   site
 ) {
   const overrides =
-    site.nameOverrides || {};
+    site.nameOverrides ||
+    {};
 
-  return channels.map((channel) => {
-    const manualName =
-      overrides[
-        String(channel.streamId)
-      ];
+  return channels.map(
+    (channel) => {
+      const manualName =
+        overrides[
+          String(
+            channel.streamId
+          )
+        ];
 
-    if (manualName) {
-      return {
-        ...channel,
-        name: manualName
-      };
+      if (manualName) {
+        return {
+          ...channel,
+          name: manualName
+        };
+      }
+
+      return channel;
     }
-
-    return channel;
-  });
+  );
 }
 
 /**
  * Parse one configured source website.
  */
-async function collectFromSite(site) {
+async function collectFromSite(
+  site
+) {
   const parser =
     parsers[site.type];
 
@@ -116,8 +172,12 @@ async function collectFromSite(site) {
   }
 
   const baseUrl =
-    String(site.baseUrl || "")
-      .replace(/\/+$/, "");
+    String(
+      site.baseUrl || ""
+    ).replace(
+      /\/+$/,
+      ""
+    );
 
   if (!baseUrl) {
     throw new Error(
@@ -131,8 +191,9 @@ async function collectFromSite(site) {
     );
 
   const siteId =
-    site.id ||
-    makeSiteId(site.name);
+    getSiteId(
+      site
+    );
 
   let channels =
     parser(
@@ -163,28 +224,42 @@ async function collectFromSite(site) {
 }
 
 /**
- * Collect channels from all enabled websites.
+ * Get all enabled source websites.
  */
-async function collectAllChannels() {
+async function getEnabledSites() {
   const config =
     await loadConfig();
 
-  const sites =
-    (config.sites || [])
-      .filter(
-        (site) =>
-          site.enabled !== false
-      );
+  return (
+    config.sites || []
+  ).filter(
+    (site) =>
+      site.enabled !== false
+  );
+}
 
-  if (sites.length === 0) {
+/**
+ * Collect channels from every enabled
+ * source website.
+ */
+async function collectAllChannels() {
+  const sites =
+    await getEnabledSites();
+
+  if (
+    sites.length === 0
+  ) {
     throw new Error(
       "No enabled source websites found"
     );
   }
 
-  const allChannels = [];
+  const allChannels =
+    [];
 
-  for (const site of sites) {
+  for (
+    const site of sites
+  ) {
     try {
       const channels =
         await collectFromSite(
@@ -194,7 +269,9 @@ async function collectAllChannels() {
       allChannels.push(
         ...channels
       );
-    } catch (error) {
+    } catch (
+      error
+    ) {
       console.error(
         `Failed to load ${site.name}:`,
         error
@@ -206,45 +283,63 @@ async function collectAllChannels() {
 }
 
 /**
- * Find the source website for a stream.
+ * Find a stream using its explicit site ID.
+ *
+ * IMPORTANT:
+ * This is the main multi-site playback path.
+ *
+ * The source homepage is fetched again
+ * during the playback request.
+ *
+ * No live HLS URL or token is stored.
  */
 async function findStreamSource(
+  siteId,
   streamId
 ) {
+  const sites =
+    await getEnabledSites();
+
+  const site =
+    sites.find(
+      (item) =>
+        getSiteId(
+          item
+        ) ===
+        String(
+          siteId
+        )
+    );
+
+  if (!site) {
+    throw new Error(
+      `Source site not found: ${siteId}`
+    );
+  }
+
+  /**
+   * Fetch and parse the source again
+   * at playback time.
+   */
   const channels =
-    await collectAllChannels();
+    await collectFromSite(
+      site
+    );
 
   const channel =
     channels.find(
       (item) =>
-        String(item.streamId) ===
-        String(streamId)
+        String(
+          item.streamId
+        ) ===
+        String(
+          streamId
+        )
     );
 
   if (!channel) {
     throw new Error(
-      `Stream ${streamId} was not found`
-    );
-  }
-
-  const config =
-    await loadConfig();
-
-  const site =
-    (config.sites || [])
-      .find(
-        (item) =>
-          item.enabled !== false &&
-          (
-            item.id ||
-            makeSiteId(item.name)
-          ) ===
-            channel.siteId
-      );
-
-  if (!site) {
-    throw new Error(
-      `Source site not found for stream ${streamId}`
+      `Stream ${streamId} was not found on site ${siteId}`
     );
   }
 
@@ -255,15 +350,100 @@ async function findStreamSource(
 }
 
 /**
- * Determine the base URL used in the generated playlist.
+ * Legacy lookup for old:
+ *
+ * /stream/209.m3u8
+ *
+ * This remains only for backward compatibility.
+ *
+ * New generated playlists will use:
+ *
+ * /stream/{siteId}/{streamId}.m3u8
  */
-function getPlaylistBaseUrl(req) {
+async function findLegacyStreamSource(
+  streamId
+) {
+  const channels =
+    await collectAllChannels();
+
+  const matches =
+    channels.filter(
+      (item) =>
+        String(
+          item.streamId
+        ) ===
+        String(
+          streamId
+        )
+    );
+
+  if (
+    matches.length === 0
+  ) {
+    throw new Error(
+      `Stream ${streamId} was not found`
+    );
+  }
+
+  /**
+   * If multiple websites later contain
+   * the same stream ID, the old URL becomes
+   * ambiguous. The new site-specific URL
+   * should then be used.
+   */
+  if (
+    matches.length > 1
+  ) {
+    throw new Error(
+      `Stream ${streamId} is ambiguous across multiple sites; use a site-specific URL`
+    );
+  }
+
+  const match =
+    matches[0];
+
+  const sites =
+    await getEnabledSites();
+
+  const site =
+    sites.find(
+      (item) =>
+        getSiteId(
+          item
+        ) ===
+        match.siteId
+    );
+
+  if (!site) {
+    throw new Error(
+      `Source site not found for stream ${streamId}`
+    );
+  }
+
+  return {
+    site,
+    channel:
+      match
+  };
+}
+
+/**
+ * Determine the public base URL used
+ * in the generated playlist.
+ */
+function getPlaylistBaseUrl(
+  req
+) {
   const configuredBase =
     process.env.PUBLIC_BASE_URL;
 
-  if (configuredBase) {
-    return configuredBase
-      .replace(/\/+$/, "");
+  if (
+    configuredBase
+  ) {
+    return configuredBase.replace(
+      /\/+$/,
+      ""
+    );
   }
 
   const forwardedProto =
@@ -275,11 +455,15 @@ function getPlaylistBaseUrl(req) {
     forwardedProto
       ? String(
           forwardedProto
-        ).split(",")[0].trim()
+        )
+          .split(",")[0]
+          .trim()
       : req.protocol;
 
   const host =
-    req.get("host");
+    req.get(
+      "host"
+    );
 
   if (!host) {
     throw new Error(
@@ -287,7 +471,9 @@ function getPlaylistBaseUrl(req) {
     );
   }
 
-  return `${protocol}://${host}`;
+  return (
+    `${protocol}://${host}`
+  );
 }
 
 /**
@@ -295,22 +481,19 @@ function getPlaylistBaseUrl(req) {
  */
 app.get(
   "/",
-  async (_req, res) => {
+  async (
+    _req,
+    res
+  ) => {
     try {
-      const config =
-        await loadConfig();
-
       const sites =
-        (config.sites || [])
-          .filter(
-            (site) =>
-              site.enabled !== false
-          )
-          .map((site) => ({
+        (
+          await getEnabledSites()
+        ).map(
+          (site) => ({
             id:
-              site.id ||
-              makeSiteId(
-                site.name
+              getSiteId(
+                site
               ),
 
             name:
@@ -321,7 +504,8 @@ app.get(
 
             baseUrl:
               site.baseUrl
-          }));
+          })
+        );
 
       res.json({
         name:
@@ -332,10 +516,16 @@ app.get(
 
         sites
       });
-    } catch (error) {
-      console.error(error);
+    } catch (
+      error
+    ) {
+      console.error(
+        error
+      );
 
-      res.status(500).json({
+      res.status(
+        500
+      ).json({
         error:
           "Failed to load configuration"
       });
@@ -345,18 +535,29 @@ app.get(
 
 /**
  * Dynamic M3U playlist.
+ *
+ * IMPORTANT:
+ * The playlist never contains a live token
+ * or direct temporary HLS URL.
  */
 app.get(
   "/latest.m3u",
-  async (req, res) => {
+  async (
+    req,
+    res
+  ) => {
     try {
       const channels =
         await collectAllChannels();
 
-      if (channels.length === 0) {
+      if (
+        channels.length === 0
+      ) {
         return res
           .status(503)
-          .send("#EXTM3U\n");
+          .send(
+            "#EXTM3U\n"
+          );
       }
 
       const baseUrl =
@@ -387,7 +588,9 @@ app.get(
       return res.send(
         playlist
       );
-    } catch (error) {
+    } catch (
+      error
+    ) {
       console.error(
         "Playlist error:",
         error
@@ -395,42 +598,54 @@ app.get(
 
       return res
         .status(500)
-        .send("#EXTM3U\n");
+        .send(
+          "#EXTM3U\n"
+        );
     }
   }
 );
 
 /**
- * Resolve a stream and redirect to the
- * current HLS URL.
+ * Main multi-site stream resolver.
+ *
+ * Every playback request:
+ *
+ * 1. identifies the source website
+ * 2. fetches that source again
+ * 3. verifies the requested channel
+ * 4. calls resolver.js
+ * 5. gets the current playable URL
+ * 6. sends a 302 redirect
+ *
+ * Nothing is persisted.
  */
 async function handleStreamRequest(
   req,
   res
 ) {
   try {
-    /**
-     * Support both:
-     *
-     * /stream/209
-     *
-     * and:
-     *
-     * /stream/209.m3u8
-     *
-     * For the second form, remove the
-     * ".m3u8" suffix before validation.
-     */
-    let streamId =
+    const siteId =
       String(
-        req.params.streamId || ""
+        req.params.siteId ||
+          ""
       );
 
-    streamId =
-      streamId.replace(
+    let streamId =
+      String(
+        req.params.streamId ||
+          ""
+      ).replace(
         /\.m3u8$/i,
         ""
       );
+
+    if (!siteId) {
+      return res
+        .status(400)
+        .send(
+          "Invalid site ID"
+        );
+    }
 
     if (
       !/^\d+$/.test(
@@ -444,11 +659,23 @@ async function handleStreamRequest(
         );
     }
 
-    const { site } =
+    const {
+      site
+    } =
       await findStreamSource(
+        siteId,
         streamId
       );
 
+    /**
+     * IMPORTANT:
+     *
+     * resolver.js performs the actual
+     * play.php -> iframe -> fresh token
+     * -> HLS resolution.
+     *
+     * No result is stored.
+     */
     const result =
       await resolveStream({
         baseUrl:
@@ -458,7 +685,9 @@ async function handleStreamRequest(
       });
 
     /**
-     * Never cache the resolver response.
+     * Prevent caching of the resolver
+     * response so clients/proxies do not
+     * intentionally reuse our redirect.
      */
     res.set({
       "cache-control":
@@ -478,7 +707,9 @@ async function handleStreamRequest(
       302,
       result.hlsUrl
     );
-  } catch (error) {
+  } catch (
+    error
+  ) {
     console.error(
       "Stream resolver error:",
       error
@@ -494,34 +725,199 @@ async function handleStreamRequest(
 }
 
 /**
- * HLS-looking resolver endpoint.
+ * New multi-site HLS-looking resolver.
  *
  * Example:
+ *
+ * /stream/xim-live-tv/209.m3u8
+ */
+app.get(
+  "/stream/:siteId/:streamId.m3u8",
+  handleStreamRequest
+);
+
+/**
+ * Same multi-site resolver without
+ * the .m3u8 suffix.
+ */
+app.get(
+  "/stream/:siteId/:streamId",
+  handleStreamRequest
+);
+
+/**
+ * Legacy single-site resolver endpoint.
+ *
+ * Existing old playlists can continue to use:
  *
  * /stream/209.m3u8
  */
 app.get(
   "/stream/:streamId.m3u8",
-  handleStreamRequest
+  async (
+    req,
+    res
+  ) => {
+    try {
+      const streamId =
+        String(
+          req.params.streamId ||
+            ""
+        ).replace(
+          /\.m3u8$/i,
+          ""
+        );
+
+      if (
+        !/^\d+$/.test(
+          streamId
+        )
+      ) {
+        return res
+          .status(400)
+          .send(
+            "Invalid stream ID"
+          );
+      }
+
+      const {
+        site
+      } =
+        await findLegacyStreamSource(
+          streamId
+        );
+
+      const result =
+        await resolveStream({
+          baseUrl:
+            site.baseUrl,
+
+          streamId
+        });
+
+      res.set({
+        "cache-control":
+          "no-store, no-cache, must-revalidate, proxy-revalidate",
+
+        "pragma":
+          "no-cache",
+
+        "expires":
+          "0",
+
+        "surrogate-control":
+          "no-store"
+      });
+
+      return res.redirect(
+        302,
+        result.hlsUrl
+      );
+    } catch (
+      error
+    ) {
+      console.error(
+        "Legacy stream resolver error:",
+        error
+      );
+
+      return res
+        .status(502)
+        .json({
+          error:
+            "Unable to resolve current stream"
+        });
+    }
+  }
 );
 
 /**
- * Original resolver endpoint.
- *
- * Example:
- *
- * /stream/209
+ * Legacy endpoint without .m3u8.
  */
 app.get(
   "/stream/:streamId",
-  handleStreamRequest
+  async (
+    req,
+    res
+  ) => {
+    try {
+      const streamId =
+        String(
+          req.params.streamId ||
+            ""
+        );
+
+      if (
+        !/^\d+$/.test(
+          streamId
+        )
+      ) {
+        return res
+          .status(400)
+          .send(
+            "Invalid stream ID"
+          );
+      }
+
+      const {
+        site
+      } =
+        await findLegacyStreamSource(
+          streamId
+        );
+
+      const result =
+        await resolveStream({
+          baseUrl:
+            site.baseUrl,
+
+          streamId
+        });
+
+      res.set({
+        "cache-control":
+          "no-store, no-cache, must-revalidate, proxy-revalidate",
+
+        "pragma":
+          "no-cache",
+
+        "expires":
+          "0",
+
+        "surrogate-control":
+          "no-store"
+      });
+
+      return res.redirect(
+        302,
+        result.hlsUrl
+      );
+    } catch (
+      error
+    ) {
+      console.error(
+        "Legacy stream resolver error:",
+        error
+      );
+
+      return res
+        .status(502)
+        .json({
+          error:
+            "Unable to resolve current stream"
+        });
+    }
+  }
 );
 
 /**
  * 404 handler.
  */
 app.use(
-  (_req, res) => {
+  (
+    _req,
+    res
+  ) => {
     res
       .status(404)
       .json({
