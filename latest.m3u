@@ -1,4 +1,6 @@
 #EXTM3U
+#EXTINF:-1 tvg-name="Live" tvg-logo="http://172.16.200.205/assets/images/live.png" group-title="XIM Live TV (BDIX)",Live
+http://172.16.200.205:8088/101/tracks-v1a1/mono.m3u8
 #EXTINF:-1 tvg-name="T Sports" tvg-logo="http://172.16.200.205/assets/images/Tsports.png" group-title="XIM Live TV (BDIX)",T Sports
 http://172.16.200.205:8088/102/tracks-v1a1/mono.m3u8
 #EXTINF:-1 tvg-name="Star Sports 1" tvg-logo="http://172.16.200.205/assets/images/Star-sports1.png" group-title="XIM Live TV (BDIX)",Star Sports 1
@@ -29,8 +31,6 @@ http://172.16.200.205:8088/303/tracks-v1a1/mono.m3u8
 http://172.16.200.205:8088/304/tracks-v1a1/mono.m3u8
 #EXTINF:-1 tvg-name="Sony Aath" tvg-logo="http://172.16.200.205/assets/images/Sony-Aath.png" group-title="XIM Live TV (BDIX)",Sony Aath
 http://172.16.200.205:8088/306/tracks-v1a1/mono.m3u8
-#EXTINF:-1 tvg-name="Enterr10 Bangla" tvg-logo="http://172.16.200.205/assets/images/ENTERR10-BANGLA.jpg" group-title="XIM Live TV (BDIX)",Enterr10 Bangla
-http://172.16.200.205:8088/307/tracks-v1a1/mono.m3u8
 #EXTINF:-1 tvg-name="Independent TV" tvg-logo="http://172.16.200.205/assets/images/independenttv.png" group-title="XIM Live TV (BDIX)",Independent TV
 http://172.16.200.205:8088/201/tracks-v1a1/mono.m3u8
 #EXTINF:-1 tvg-name="ATN Bangla" tvg-logo="http://172.16.200.205/assets/images/atnbangla.png" group-title="XIM Live TV (BDIX)",ATN Bangla
